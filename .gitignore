@@ -1,1 +1,5 @@
 .env
+ftp-watch
+*.key
+*.crt
+*.ovpn

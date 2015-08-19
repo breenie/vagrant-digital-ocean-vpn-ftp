@@ -6,7 +6,7 @@ VAGRANTFILE_API_VERSION = '2'
 $image = 'ubuntu-14-04-x64'
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-    config.vm.hostname = 'ldsc' # comatose, meathead, rocksteady
+    config.vm.hostname = 'ldsc-ftp'
 
     config.ssh.private_key_path = '~/.ssh/id_rsa'
     config.vm.box = 'digital_ocean'

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+MG_API_KEY="Mailgun API key"
+MG_HOSTNAME='https://api.mailgun.net/v3/mg.kurl.io/messages'
+
+MAIL_FROM='Webcam <mailgun@mg.kurl.io>'
+MAIL_TO='chris@kurl.io'
+MAIL_SUBJECT="Hutcam image $(date +'%Y-%m-%d %H:%M:%S')"
+MAIL_BODY='Testing some Mailgun awesomness!'
+
+flickr_push () {
+    local image=${1}
+
+    curl -s --user "api:key-${MG_API_KEY}" "${MG_HOSTNAME}" \
+        -F from="${MAIL_TO}" \
+        -F to="${MAIL_TO}" \
+        -F attachment="@${image}" \
+        -F subject="${MAIL_SUBJECT}" \
+        -F text="${MAIL_BODY}"
+}
+
+if [ -z "$1" ]
+    then
+        echo "Usage:"
+        echo $(basename $0) image
+else
+    flickr_push $1
+fi

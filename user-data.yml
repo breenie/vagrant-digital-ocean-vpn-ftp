@@ -8,6 +8,7 @@ packages:
   - ufw
   - vsftpd
   - incron
+  - ntp
 
 users:
   - name: files
@@ -16,6 +17,9 @@ users:
     homedir: /home/files
 
 runcmd:
+  - rm -f /etc/localtime
+  - ln -s /usr/share/zoneinfo/Europe/London /etc/localtime
+
   - sed -ie 's/listen=NO/listen=YES/' /etc/vsftpd.conf
   - sed -ie 's/anonymous_enable=YES/anonymous_enable=NO/' /etc/vsftpd.conf
   - sed -ie 's/#write_enable=YES/write_enable=YES/' /etc/vsftpd.conf
@@ -27,13 +31,16 @@ runcmd:
   - echo "pasv_min_port=40000" >> /etc/vsftpd.conf
   - echo "pasv_max_port=40100" >> /etc/vsftpd.conf
   - echo "/usr/sbin/nologin" >> /etc/shells
-
   - passwd -u files
 
   - ufw allow ftp
   - service vsftpd restart
 
-  - echo "files" >> /etc/incron.allow
+  - ln -s /vagrant/ftp-watch /usr/local/bin/ftp-watch
+  - chmod +rx /usr/local/bin/ftp-watch
+
+  - echo "/home/files IN_ATTRIB,IN_CLOSE_WRITE /usr/local/bin/ftp-watch \$@/\$# >> /var/log/ftp-watch.log 2>&1" > /etc/incron.d/ftp-watch
+  - service incron restart
 
   - IPADDR=$(curl -s http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address)
   - gunzip -c /usr/share/doc/openvpn/examples/sample-config-files/server.conf.gz > /etc/openvpn/server.conf
@@ -70,33 +77,35 @@ runcmd:
   - cp /etc/openvpn/easy-rsa/keys/server.key /etc/openvpn
   - cp /etc/openvpn/easy-rsa/keys/ca.crt /etc/openvpn
 
-  - cd /etc/openvpn/easy-rsa && ./build-key --batch client1
-  - cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf /etc/openvpn/easy-rsa/keys/client.ovpn
-  - sed -ie "s/my-server-1/$IPADDR/" /etc/openvpn/easy-rsa/keys/client.ovpn
-  - sed -ie 's/;user nobody/user nobody/' /etc/openvpn/easy-rsa/keys/client.ovpn
-  - sed -ie 's/;group nogroup/group nogroup/' /etc/openvpn/easy-rsa/keys/client.ovpn
-  - sed -ie 's/ca ca.crt//' /etc/openvpn/easy-rsa/keys/client.ovpn
-  - sed -ie 's/cert client.crt//' /etc/openvpn/easy-rsa/keys/client.ovpn
-  - sed -ie 's/key client.key//' /etc/openvpn/easy-rsa/keys/client.ovpn
-  - echo "<ca>" >> /etc/openvpn/easy-rsa/keys/client.ovpn
-  - cat /etc/openvpn/ca.crt >> /etc/openvpn/easy-rsa/keys/client.ovpn
-  - echo "</ca>" >> /etc/openvpn/easy-rsa/keys/client.ovpn
-  - echo "<cert>" >> /etc/openvpn/easy-rsa/keys/client.ovpn
-  - cat /etc/openvpn/easy-rsa/keys/client1.crt >> /etc/openvpn/easy-rsa/keys/client.ovpn
-  - echo "</cert>" >> /etc/openvpn/easy-rsa/keys/client.ovpn
-  - echo "<key>" >> /etc/openvpn/easy-rsa/keys/client.ovpn
-  - cat /etc/openvpn/easy-rsa/keys/client1.key >> /etc/openvpn/easy-rsa/keys/client.ovpn
-  - echo "</key>" >> /etc/openvpn/easy-rsa/keys/client.ovpn
+  # Generate the webcam client as this will receive a static IP so shouldn't be shared
+  - cd /etc/openvpn/easy-rsa && ./build-key --batch webcam
+  - cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - sed -ie "s/my-server-1/$IPADDR/" /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - sed -ie 's/;user nobody/user nobody/' /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - sed -ie 's/;group nogroup/group nogroup/' /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - sed -ie 's/ca ca.crt//' /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - sed -ie 's/cert client.crt//' /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - sed -ie 's/key client.key//' /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - echo "<ca>" >> /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - cat /etc/openvpn/ca.crt >> /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - echo "</ca>" >> /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - echo "<cert>" >> /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - cat /etc/openvpn/easy-rsa/keys/webcam.crt >> /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - echo "</cert>" >> /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - echo "<key>" >> /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - cat /etc/openvpn/easy-rsa/keys/webcam.key >> /etc/openvpn/easy-rsa/keys/webcam.ovpn
+  - echo "</key>" >> /etc/openvpn/easy-rsa/keys/webcam.ovpn
 
-  - cp /etc/openvpn/easy-rsa/keys/client.ovpn /root/
-  - cp /etc/openvpn/easy-rsa/keys/client1.crt /root/
-  - cp /etc/openvpn/easy-rsa/keys/client1.key /root/
   - cp /etc/openvpn/easy-rsa/keys/ca.crt /root/
+  
+  - cp /etc/openvpn/easy-rsa/keys/webcam.ovpn /root/
+  - cp /etc/openvpn/easy-rsa/keys/webcam.crt /root/
+  - cp /etc/openvpn/easy-rsa/keys/webcam.key /root/
 
   - mkdir /etc/openvpn/staticclients
   - echo "client-config-dir /etc/openvpn/staticclients" >> /etc/openvpn/server.conf
-  - echo "ifconfig-push 10.8.0.2 255.255.255.0" >> /etc/openvpn/staticclients/client1
-  - echo 'push "route 10.8.0.2 255.255.255.0 10.8.0.1"' >> /etc/openvpn/staticclients/client1
+  - echo "ifconfig-push 10.8.0.2 255.255.255.0" >> /etc/openvpn/staticclients/webcam
+  - echo 'push "route 10.8.0.2 255.255.255.0 10.8.0.1"' >> /etc/openvpn/staticclients/webcam
 
   - ufw allow 80/tcp
   - iptables -t nat -A POSTROUTING -j MASQUERADE
