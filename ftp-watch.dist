@@ -8,15 +8,23 @@ MAIL_TO='chris@kurl.io'
 MAIL_SUBJECT="Hutcam image $(date +'%Y-%m-%d %H:%M:%S')"
 MAIL_BODY='Testing some Mailgun awesomness!'
 
+IMAGE_MEAN_THRESHOLD=5000
+
 flickr_push () {
     local image=${1}
 
-    curl -s --user "api:key-${MG_API_KEY}" "${MG_HOSTNAME}" \
-        -F from="${MAIL_TO}" \
-        -F to="${MAIL_TO}" \
-        -F attachment="@${image}" \
-        -F subject="${MAIL_SUBJECT}" \
-        -F text="${MAIL_BODY}"
+    mean=$(printf '%.0f' $(identify -format "%[mean]" $1))
+
+    if [ ${mean} -gt ${IMAGE_MEAN_THRESHOLD} ]; then
+        curl -s --user "api:key-${MG_API_KEY}" "${MG_HOSTNAME}" \
+            -F from="${MAIL_TO}" \
+            -F to="${MAIL_TO}" \
+            -F attachment="@${image}" \
+            -F subject="${MAIL_SUBJECT}" \
+            -F text="${MAIL_BODY}"
+    else
+        echo "${image} is too dark and will not be uploaed"
+    fi
 }
 
 if [ -z "$1" ]

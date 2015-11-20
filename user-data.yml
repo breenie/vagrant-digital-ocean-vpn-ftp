@@ -9,6 +9,7 @@ packages:
   - vsftpd
   - incron
   - ntp
+  - imagemagick
 
 users:
   - name: files
@@ -97,7 +98,7 @@ runcmd:
   - echo "</key>" >> /etc/openvpn/easy-rsa/keys/webcam.ovpn
 
   - cp /etc/openvpn/easy-rsa/keys/ca.crt /root/
-  
+
   - cp /etc/openvpn/easy-rsa/keys/webcam.ovpn /root/
   - cp /etc/openvpn/easy-rsa/keys/webcam.crt /root/
   - cp /etc/openvpn/easy-rsa/keys/webcam.key /root/
